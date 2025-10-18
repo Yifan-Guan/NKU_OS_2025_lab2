@@ -28,7 +28,7 @@
 
 #define SV39_PGSIZE          4096                    // bytes mapped by a page
 #define SV39_PGSHIFT         12                      // log2(PGSIZE)
-#define SV39_PTSIZE          (PGSIZE * SV39NENTRY)   // bytes mapped by a page directory entry
+#define SV39_PTSIZE          (PGSIZE * SV39_NENTRY)   // bytes mapped by a page directory entry
 #define SV39_PTSHIFT         21                      // log2(PTSIZE)
 
 #define SV39_VPN0SHIFT       12                      // offset of VPN0 in a linear address
