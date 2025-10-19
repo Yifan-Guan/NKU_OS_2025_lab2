@@ -248,7 +248,6 @@ slub_free(kmem_cache_t *cache, void *object) {
         return;
     }
     
-    // 将对象放回空闲链表
     *(void **)object = slab->freelist;
     slab->freelist = object;
     slab->inuse--;
@@ -256,7 +255,6 @@ slub_free(kmem_cache_t *cache, void *object) {
     
     // 根据slab状态调整列表
     if (slab->inuse == 0) {
-        // 从当前列表移除
         if (prev != NULL) {
             prev->next = slab->next;
         } else {
@@ -294,7 +292,6 @@ slub_get_cache(size_t n) {
     return NULL; // 对于大对象，使用原始页面分配
 }
 
-// SLUB分配页面
 static struct Page *
 slub_alloc_pages(size_t n) {
     if (n == 0) {
@@ -302,12 +299,13 @@ slub_alloc_pages(size_t n) {
     }
     
     // 大对象分配：直接使用原始页面分配
-    if (n > 1 || n * PGSIZE > SLUB_MAX_SIZE) {
-        return alloc_pages_from_free_list(n);
+    if (n >= PGSIZE) {
+        size_t n_up = ROUNDUP(n, PGSIZE) / PGSIZE;
+        return alloc_pages_from_free_list(n_up);
     }
     
     // 小对象分配：使用SLUB
-    kmem_cache_t *cache = slub_get_cache(n * PGSIZE);
+    kmem_cache_t *cache = slub_get_cache(n);
     if (cache == NULL) {
         return NULL;
     }
@@ -317,9 +315,7 @@ slub_alloc_pages(size_t n) {
         return NULL;
     }
     
-    // 将对象地址转换为页面结构
-    // 注意：这里简化处理，实际需要更复杂的地址转换
-    struct Page *page = pa2page(PADDR(object));
+    struct Page *page = object;
     return page;
 }
 
@@ -331,7 +327,8 @@ slub_free_pages(struct Page *base, size_t n) {
     }
     
     // 大对象释放：直接释放到空闲列表
-    if (n > 1 || n * PGSIZE > SLUB_MAX_SIZE) {
+    if (n >= PGSIZE) {
+        n = ROUNDUP(n, PGSIZE) / PGSIZE;
         struct Page *p = base;
         for (; p != base + n; p ++) {
             assert(!PageReserved(p) && !PageProperty(p));
@@ -382,7 +379,7 @@ slub_free_pages(struct Page *base, size_t n) {
     }
     
     // 小对象释放：使用SLUB
-    kmem_cache_t *cache = slub_get_cache(n * PGSIZE);
+    kmem_cache_t *cache = slub_get_cache(n);
     if (cache != NULL) {
         void *object = base;
         slub_free(cache, object);
@@ -394,16 +391,14 @@ slub_nr_free_pages(void) {
     return nr_free;
 }
 
-// 基本检查函数（需要适配SLUB）
 static void
 slub_basic_check(void) {
-    // 简化实现，实际需要更复杂的检查
     struct Page *p0, *p1, *p2;
     p0 = p1 = p2 = NULL;
     
-    assert((p0 = slub_alloc_pages(1)) != NULL);
-    assert((p1 = slub_alloc_pages(1)) != NULL);
-    assert((p2 = slub_alloc_pages(1)) != NULL);
+    assert((p0 = slub_alloc_pages(1 * PGSIZE)) != NULL);
+    assert((p1 = slub_alloc_pages(1 * PGSIZE)) != NULL);
+    assert((p2 = slub_alloc_pages(1 * PGSIZE)) != NULL);
 
     assert(p0 != p1 && p0 != p2 && p1 != p2);
     assert(page_ref(p0) == 0 && page_ref(p1) == 0 && page_ref(p2) == 0);
@@ -413,11 +408,12 @@ slub_basic_check(void) {
     slub_free_pages(p2, 1);
 }
 
-// 默认检查函数
 static void
 slub_default_check(void) {
-    // 简化实现
     slub_basic_check();
+    struct Page *p0;
+    assert((p0 = slub_alloc_pages(22)) != NULL);
+    slub_free_pages(p0, 22);
 }
 
 const struct pmm_manager slub_pmm_manager = {
