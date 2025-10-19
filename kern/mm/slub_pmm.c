@@ -292,6 +292,10 @@ slub_get_cache(size_t n) {
     return NULL; // 对于大对象，使用原始页面分配
 }
 
+// slub_alloc_pages的参数n并不是物理页数，而是字节数。
+// 对于大对象分配，函数返回struct Page页指针。
+// 对于小对象分配，函数返回分配到的地址，实际类型为void*。
+// 只所以保留alloc_pages的函数名是为了形式上与其它分配算法的接口统一
 static struct Page *
 slub_alloc_pages(size_t n) {
     if (n == 0) {
@@ -420,7 +424,7 @@ const struct pmm_manager slub_pmm_manager = {
     .name = "slub_pmm_manager",
     .init = slub_init,
     .init_memmap = slub_init_memmap,
-    .alloc_pages = slub_alloc_pages,
+    .alloc_pages = slub_alloc_pages, // 参数为字节数
     .free_pages = slub_free_pages,
     .nr_free_pages = slub_nr_free_pages,
     .check = slub_default_check,
