@@ -192,7 +192,6 @@ buddy_nr_free_pages(void) {
 
 static void
 basic_check(void) {
-    // 基本检查逻辑保持不变，确保与原有测试兼容
     struct Page *p0, *p1, *p2;
     p0 = p1 = p2 = NULL;
     assert((p0 = alloc_page()) != NULL);
@@ -219,6 +218,7 @@ buddy_check(void) {
     struct Page *p0 = alloc_pages(5);
     assert(p0 != NULL);
     assert(!PageProperty(p0));
+    assert(p0->property == 5);
 
     free_pages(p0, 5);
 
