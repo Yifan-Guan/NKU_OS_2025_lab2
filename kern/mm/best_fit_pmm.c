@@ -72,7 +72,7 @@ best_fit_init_memmap(struct Page *base, size_t n) {
     struct Page *p = base;
     for (; p != base + n; p ++) {
         assert(PageReserved(p));
-        /*LAB2 EXERCISE 2: 2312307*/ 
+        /*LAB2 EXERCISE 2: 2312307_2312313*/ 
         // 清空当前页框的标志和属性信息，并将页框的引用计数设置为0
         p->flags = p->property = 0;
         set_page_ref(p, 0);
@@ -86,7 +86,7 @@ best_fit_init_memmap(struct Page *base, size_t n) {
         list_entry_t* le = &free_list;
         while ((le = list_next(le)) != &free_list) {
             struct Page* page = le2page(le, page_link);
-            /*LAB2 EXERCISE 2: 2312307*/ 
+            /*LAB2 EXERCISE 2: 2312307_2312313*/ 
             // 编写代码
             // 1、当base < page时，找到第一个大于base的页，将base插入到它前面，并退出循环
             // 2、当list_next(le) == &free_list时，若已经到达链表结尾，将base插入到链表尾部
@@ -122,6 +122,24 @@ best_fit_alloc_pages(size_t n) {
         }
     }
 
+    /*LAB2 EXERCISE 2: 2312313
+    while ((le = list_next(le)) != &free_list) {
+             struct Page *p = le2page(le, page_link);
+             if (p->property >= n) {
+                 size_t diff = p->property - n;
+                 if (diff == 0) {
+                     page = p;
+                     min_size = 0;
+                     break;
+                 }
+                 if (diff < min_size) {
+                     min_size = diff;
+                     page = p;
+                 }
+             }
+         }
+    */
+
     if (page != NULL) {
         list_entry_t* prev = list_prev(&(page->page_link));
         list_del(&(page->page_link));
@@ -146,7 +164,7 @@ best_fit_free_pages(struct Page *base, size_t n) {
         p->flags = 0;
         set_page_ref(p, 0);
     }
-    /*LAB2 EXERCISE 2: 2312307*/ 
+    /*LAB2 EXERCISE 2: 2312307_2312313*/ 
     // 编写代码
     // 具体来说就是设置当前页块的属性为释放的页块数、并将当前页块标记为已分配状态、最后增加nr_free的值
     
@@ -172,7 +190,7 @@ best_fit_free_pages(struct Page *base, size_t n) {
     list_entry_t* le = list_prev(&(base->page_link));
     if (le != &free_list) {
         p = le2page(le, page_link);
-        /*LAB2 EXERCISE 2: 2312307*/ 
+        /*LAB2 EXERCISE 2: 2312307_2312313*/ 
         // 编写代码
         // 1、判断前面的空闲页块是否与当前页块是连续的，如果是连续的，则将当前页块合并到前面的空闲页块中
         // 2、首先更新前一个空闲页块的大小，加上当前页块的大小
